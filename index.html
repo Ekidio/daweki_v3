@@ -1645,7 +1645,7 @@ body.theme-logic[data-lanes-white="1"] .ruler{
     </div>
     <div class="time-display"><span id="barBeat">01:1</span><span class="time-sep">·</span><span id="curTime">00:00.0</span><span class="time-sep">/</span><span id="totalTime">00:00.0</span></div>
     <div class="bpm-group"><label for="bpmInput">BPM</label><input type="number" id="bpmInput" min="40" max="300" step="1" value="120"></div>
-    <div class="auto-group" title="Automation: READ plays the recorded curves, TOUCH records whatever you move while playing"><label>AUTO</label><button class="pill-btn auto-mode" type="button" data-mode="off" title="Automation off">OFF</button><button class="pill-btn auto-mode active" type="button" data-mode="read" title="READ: play back the recorded automation">READ</button><button class="pill-btn auto-mode" type="button" data-mode="touch" title="TOUCH: move any fader / knob while playing to record it; on release it returns to the existing automation">TOUCH</button></div>
+    <div class="auto-group" title="Automation: READ plays the recorded curves, TOUCH records whatever you move while playing and holds the last value until you stop"><label>AUTO</label><button class="pill-btn auto-mode" type="button" data-mode="off" title="Automation off">OFF</button><button class="pill-btn auto-mode active" type="button" data-mode="read" title="READ: play back the recorded automation">READ</button><button class="pill-btn auto-mode" type="button" data-mode="touch" title="TOUCH (latch): move any fader / knob while playing to record it; after you let go it keeps the last value until playback stops">TOUCH</button></div>
     <button id="metronomeBtn" class="pill-btn metronome-btn" aria-label="Metronome on/off" aria-pressed="false">METRO OFF</button>
     <button id="snapBtn" class="pill-btn active" aria-label="Snap">🧲 SNAP</button>
     <button id="splitBtn" class="pill-btn" aria-label="Split selected region at playhead (S)">✂ SPLIT</button>
@@ -2826,12 +2826,14 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) autosave
 window.addEventListener('pagehide', ()=>{ autosaveTick(); });
 
 /* ================= AUTOMATION (OFF / READ / TOUCH) =================
-   Felvetel: TOUCH modban lejatszas kozben barmelyik hangero / pan / send / effekt-parameter / effekt ON megmozgatasa azonnal rogzitodik
-   (a megfogastol az elengedesig), majd a parameter visszasimul a meglevo gorbere. READ: lejatssza a gorbeket. OFF: figyelmen kivul hagyja.
+   Felvetel: TOUCH modban (LATCH viselkedessel) lejatszas kozben barmelyik hangero / pan / send / effekt-parameter / effekt ON megmozgatasa
+   az ELSO erintestol rogzitodik, es elengedes utan is az utolso erteken marad (ezt irja tovabb) a lejatszas leallitasaig - nem ugrik vissza
+   a regi gorbere. READ: lejatssza a gorbeket. OFF: figyelmen kivul hagyja.
    Adat: track.auto = { laneKey: [[ido_mp, ertek], ...] }, laneKey: 'vol' | 'pan' | 'sr' | 'sd' | 'fx:<insert.aid>:<param> | 'fxon:<insert.aid>'. */
-const AUTO = { hintT:-1e9, mode:'read', passes:new Map(), overrides:new Set(), applied:new Map(), applying:false, dirty:true, wasPlaying:false, lastStopT:-1, captured:false, timeout:320 };
+const AUTO = { hintT:-1e9, mode:'read', passes:new Map(), overrides:new Set(), applied:new Map(), applying:false, dirty:true, wasPlaying:false, lastStopT:-1, captured:false };
 let autoIdCounter = 0, autoMenuEl = null;
 const AUTO_RETURN_SEC = 0.15;
+const AUTO_SEEK_SEC = 2;      // ekkora eloreugras a lejatszofejen mar keresesnek szamit (a tartott ertek uj menetben folytatodik)
 function autoNewId(){ return 'a' + Date.now().toString(36) + (autoIdCounter++).toString(36) + Math.random().toString(36).slice(2, 5); }
 function autoPanLabel(v){ return v<-0.02?('L'+Math.round(Math.abs(v)*100)) : v>0.02?('R'+Math.round(v*100)) : 'C'; }
 function autoFxKey(ins, key){ return 'fx:'+ins.aid+':'+key; }
@@ -2944,7 +2946,7 @@ function autoSetMode(m){
 function autoCaptureOnce(){ if(!AUTO.captured){ captureHistory(); AUTO.captured=true; } }   // egy lejatszasi menet = egy visszavonasi lepes
 function autoBeginPass(track, laneKey, info){
   const t=currentPlayheadSeconds();
-  const ps={ track, laneKey, info, k:track.index+'|'+laneKey, pts:[[t, info.get()]], gesture:0, usedGesture:false, last:performance.now() };
+  const ps={ track, laneKey, info, k:track.index+'|'+laneKey, pts:[[t, info.get()]], gesture:0, usedGesture:false, last:performance.now(), tHead:t };
   track.autoView=laneKey; track.autoShow=true;
   AUTO.passes.set(ps.k, ps); autoRefreshIndicators(); return ps;
 }
@@ -2966,12 +2968,12 @@ function autoManual(track, laneKey, value){
   const info=autoLaneInfo(track, laneKey); if(!info) return;
   const t=currentPlayheadSeconds();
   let ps=AUTO.passes.get(k), carry=0, used=false;
-  if(ps && t < ps.pts[ps.pts.length-1][0]-0.05){ carry=ps.gesture; used=ps.usedGesture; autoCommit(ps); ps=null; }   // a lejatszofej visszaugrott (loop / keresés)
+  if(ps && t < ps.pts[ps.pts.length-1][0]-0.05){ carry=ps.gesture; used=ps.usedGesture; autoCommit(ps, true); ps=null; }   // a lejatszofej visszaugrott (loop / keresés)
   if(!ps){ ps=autoBeginPass(track, laneKey, info); ps.gesture=carry; ps.usedGesture=used; }
   const v=Math.max(info.min, Math.min(info.max, value));
   const last=ps.pts[ps.pts.length-1];
-  if(t>last[0] || v!==last[1]) ps.pts.push([Math.max(t,last[0]), v]);
-  ps.last=performance.now();
+  if(t>last[0] || v!==last[1]) ps.pts.push([v!==last[1] ? Math.max(t, last[0]+0.002) : Math.max(t,last[0]), v]);   // az elso (megfogaskori) pont nem vesz el, ha az ertekvaltas ugyanabban a pillanatban jon
+  ps.last=performance.now(); ps.tHead=Math.max(ps.tHead||0, t);
 }
 function autoGesture(track, laneKey, delta){
   if(AUTO.applying || AUTO.mode!=='touch') return;
@@ -2983,13 +2985,14 @@ function autoGesture(track, laneKey, delta){
     ps.gesture++; ps.usedGesture=true; ps.last=performance.now();
   } else if(ps){ ps.gesture=Math.max(0, ps.gesture-1); ps.last=performance.now(); }
 }
-function autoCommit(ps){
+function autoCommit(ps, noExtend){
   AUTO.passes.delete(ps.k);
   const { track, laneKey, info } = ps;
   const pts=ps.pts.slice();
   let tEnd=pts[pts.length-1][0];
-  if(isPlaying){ const now=currentPlayheadSeconds(); if(now>tEnd) tEnd=now; }
-  if(tEnd>pts[pts.length-1][0]+1e-4) pts.push([tEnd, pts[pts.length-1][1]]);   // a megfogott ertek az elengedesig tart
+  if(ps.tHead>tEnd) tEnd=ps.tHead;                                             // LATCH: a tartott ertek a lejatszofej utolso ismert helyeig tart
+  if(isPlaying && !noExtend){ const now=currentPlayheadSeconds(); if(now>tEnd) tEnd=now; }
+  if(tEnd>pts[pts.length-1][0]+1e-4) pts.push([tEnd, pts[pts.length-1][1]]);
   if(pts.length<2 || (tEnd-pts[0][0]<0.03 && pts.every(p=>p[1]===pts[0][1]))){ autoRefreshIndicators(); return; }   // veletlen kattintas, nem irunk
   const thin=autoThin(pts, (info.max-info.min)*0.004, info.stepped);
   const t0=thin[0][0], t1=thin[thin.length-1][0];
@@ -2997,7 +3000,7 @@ function autoCommit(ps){
   autoCaptureOnce();
   const before=orig.filter(p=>p[0]<t0), after=orig.filter(p=>p[0]>t1);
   const out=before.concat(thin);
-  if(orig.length){                                          // volt automatizalas: elengedes utan visszaterunk a meglevo gorbere
+  if(orig.length){                                          // volt automatizalas: a leallitas (menet vege) utan a meglevo gorbe folytatodik
     const rt=t1+(info.stepped?0.002:AUTO_RETURN_SEC);
     if(!after.length || rt<after[0][0]) out.push([rt, autoValueAt(orig, rt, info.stepped)]);
   }
@@ -3012,7 +3015,15 @@ function autoCommitAll(){ Array.from(AUTO.passes.values()).forEach(autoCommit); 
 function autoTick(){
   if(!audioCtx || !tracks.length) return;
   const now=performance.now();
-  AUTO.passes.forEach(ps=>{ const wait=ps.usedGesture?70:AUTO.timeout; if(ps.gesture<=0 && now-ps.last>wait) autoCommit(ps); });
+  if(isPlaying){                                          // LATCH: a menet nem er veget elengedeskor; csak leallitaskor / modvaltaskor / ugrasnal
+    const tn=currentPlayheadSeconds();
+    Array.from(AUTO.passes.values()).forEach(ps=>{
+      if(tn<ps.tHead-0.05 || tn>ps.tHead+AUTO_SEEK_SEC){       // loop / keresés: a regi szakasz lezarul, a tartott ertek uj menetben folytatodik
+        const g=ps.gesture, u=ps.usedGesture; autoCommit(ps, true);
+        const np=autoBeginPass(ps.track, ps.laneKey, ps.info); np.gesture=g; np.usedGesture=u;
+      } else ps.tHead=Math.max(ps.tHead, tn);
+    });
+  }
   if(AUTO.passes.size) autoDrawCurves();                   // felvetel kozben elo rajzolas
   const playing=isPlaying;
   if(playing!==AUTO.wasPlaying){
