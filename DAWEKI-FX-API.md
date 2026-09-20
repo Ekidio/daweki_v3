@@ -85,7 +85,7 @@ Nyugodtan használj `innerHTML`-t, `<canvas>`-t, SVG-t, Base64 képet.
 | `createKnob(param, onChange)` | kész potméter elem (`.fx-knob`, `.fx-knob-label`, `.fx-knob-value` – a saját CSS-eddel felülírható). Az opcionális `onChange(érték)` minden változtatás után lefut (pl. görbe újrarajzolásához) |
 | `getLevel('in' \| 'out')` | aktuális csúcsszint (lineáris, 0..1) az effekt bemenetén / kimenetén – `requestAnimationFrame`-ből olvasd |
 | `getState()` | **(v2)** az élő effekt `getState()` eredménye (vagy `null`) – `requestAnimationFrame`-ből olvasd |
-| `beginGesture(key)` / `endGesture(key)` | **(v2, automatizálás)** a felület „megfogta" / „elengedte" a paramétert (pl. gomb `pointerdown` / `pointerup`). TOUCH módban a felvétel ettől az elengedésig tart. Ha a felület nem hívja, a DAWEKI 320 ms mozdulatlanság után elengedettnek veszi |
+| `beginGesture(key)` / `endGesture(key)` | **(v2, automatizálás)** a felület „megfogta" / „elengedte" a paramétert (pl. gomb `pointerdown` / `pointerup`). TOUCH (latch) módban a felvétel az első megfogástól a lejátszás leállításáig tart, az elengedés csak jelzés. Hívása nem kötelező |
 | `getAutomation(key)` | **(v2)** a paraméter automatizálási állapota: `'none'`, `'has'` (van felvétel), `'ovr'` (READ-ben kézzel felülírva), `'rec'` (éppen írja), `'off'` (van, de az AUTO ki van kapcsolva) – jelzőpontnak |
 | `onParamChange(fn)` | **(v2)** a host változtatta a paramétert (automatizálás lejátszása, visszavonás, betöltés) vagy megváltozott az automatizálási állapot: `fn(key)` (`key = null`: mindent frissíts). Visszaad egy leiratkozó függvényt |
 | `paramMenu(key, mouseEvent)` | **(v2)** a jobb klikk menü (automatizálás törlése): a `contextmenu` eseménnyel hívd |
@@ -100,13 +100,13 @@ Ha nincs `renderGUI`, a DAWEKI a `params` alapján potméteres alap GUI-t (be/ki
 
 ## Automatizálás (v2)
 A DAWEKI-ban az effektek paramétereit (a sáv hangerejével, pánjával és send-jeivel együtt) fel lehet venni és vissza lehet játszani:
-- **AUTO: OFF / READ / TOUCH** a felső sávban. **TOUCH:** lejátszás közben bármit megmozgatsz, az azonnal rögzül (megfogástól elengedésig), utána a paraméter
-  visszasimul a meglévő görbére. **READ:** lejátssza a görbéket (a gombok és fadersek mozognak). Leállás után magától nem vált READ-re.
+- **AUTO: OFF / READ / TOUCH** a felső sávban. **TOUCH (LATCH-viselkedéssel):** lejátszás közben bármit megmozgatsz, az az első érintéstől rögzül, és elengedés után **az utolsó
+  értéken marad** (ezt írja tovább) a lejátszás leállításáig – nem ugrik vissza a régi görbére. Leállás után a meglévő görbe folytatódik. **READ:** lejátssza a görbéket (a gombok és fadersek mozognak). Leállás után magától nem vált READ-re.
 - A **jelzőpont** a paraméter mellett: zöld = van felvétel, piros = éppen írja, borostyán = READ-ben kézzel felülírtad (a lejátszás végéig), szürke = AUTO ki.
 - **Jobb klikk** a paraméteren: „Clear automation"; a sáv fejlécén: az egész sáv automatizálásának törlése. Egy lejátszási menet egy **Ctrl+Z** lépés.
 - A `render` is használja a görbéket. A projekt (`.daweki`) menti őket; az effektek `aid` azonosítót kapnak, így átrendezéskor sem vesznek el.
 - A FX MAKER-ből exportált effektek felülete automatikusan tudja ezt (megfogás-jelzés, pont, jobb klikk, követés). Kézzel írt felületnél a fenti `api` függvényeket
-  hívd; ha nem hívod, a felvétel akkor is működik (időzítéses elengedés), csak jelzőpont nincs.
+  hívd; ha nem hívod, a felvétel akkor is működik, csak jelzőpont nincs.
 - **Görbe a sávon:** az automatizált paraméter görbéje (vonal + pontok) megjelenik a sávon; felvétel közben pirosan, élőben rajzolódik. A sáv fejlécén a zöld
   `∿` jelző mutatja, melyik paraméter látszik; kattintásra (vagy jobb klikkre a fejlécen) választhatsz másikat, elrejtheted, vagy törölheted. A görbe csak megjelenítés (szerkeszthetősége később jön).
 - Az effekt ablakának fejlécében **REC** (íráskor) / **AUTO** (van felvétel) jelzés látszik akkor is, ha a felület nem rajzol pontot.
