@@ -2257,7 +2257,8 @@ function fxOnPackRegistered(pack){
 }
 /* Egy effekt-script lefuttatasa. Elmenti a forraskodot is (fxSourceByPack): mentéskor ez kerul
    a projektbe, igy a projekt masutt is megnyithato a .js fajlok nelkul. */
-const fxSourceByPack = {};   // packId -> { fileName, code }
+const fxSourceByPack = {};   // packId -> { fileName, code, name }
+let fxIdClash = null, fxClashNote = '';
 function fxRunScript(code, fileName){
   const loaded=[]; let error=null;
   const onError=(ev)=>{ if(!error) error=ev.message||'script error'; };
@@ -2267,7 +2268,14 @@ function fxRunScript(code, fileName){
   scriptEl.textContent=code;
   try{ document.body.appendChild(scriptEl); } catch(e){ error=e.message; }
   finally{ scriptEl.remove(); fxLoadCollector=null; window.removeEventListener('error', onError); }
-  loaded.forEach(pack=>{ fxSourceByPack[pack.id]={ fileName, code }; });
+  loaded.forEach(pack=>{
+    const prev=fxSourceByPack[pack.id];
+    if(prev && prev.code!==code && prev.name && prev.name!==pack.name){        // azonos ID, de mas nevu effekt: a regi helyere kerult (a FX MAKER-ben adj nekik kulonbozo ID-t)
+      fxIdClash={ id:pack.id, oldName:prev.name, newName:pack.name };
+    }
+    fxSourceByPack[pack.id]={ fileName, code, name:pack.name };
+  });
+  if(fxIdClash){ const c=fxIdClash; fxIdClash=null; fxClashNote='"'+c.newName+'" has the same ID ("'+c.id+'") as "'+c.oldName+'" and REPLACED it. In FX MAKER give the two effects different IDs.'; }
   return { loaded, error };
 }
 /* --- projektbe mentett scriptek: bizalmi lista (SHA-256 hash a localStorage-ban) --- */
@@ -2347,6 +2355,7 @@ async function fxLoadProjectScripts(scripts){
    vegere kerulnek (kikapcsolt allapotban). Ha a csomag mar rajta van a savon, csak frissul. */
 async function loadFxFiles(files, track){
   const errors=[]; const names=[]; let added=0, skippedFull=false, multi=false;
+  fxClashNote='';
   for(const file of files){
     let code;
     try{ code=await file.text(); } catch(e){ errors.push(file.name+': read error'); continue; }
@@ -2363,6 +2372,7 @@ async function loadFxFiles(files, track){
     });
   }
   if(errors.length) showToast('FX LOAD ERROR: '+errors[0], true);
+  else if(fxClashNote){ showToast(fxClashNote, true); fxClashNote=''; }
   else if(skippedFull) showToast('FX LOADED – INSERT LIMIT ('+FX_MAX_INSERTS+') REACHED', true);
   else if(multi && !added) showToast('FX LOADED ✓ '+names.join(', ')+' – pick the effect from the list');
   else showToast('FX LOADED ✓ '+names.join(', ')+(added?(' (+'+added+')'):''));
@@ -2384,6 +2394,9 @@ function fxBroadcastTempo(){
 function fxSpectrum(track, ins, which){
   const w=track.fxChain && track.fxChain.wrapped.find(x=>x.insert===ins);
   if(!w || !audioCtx) return null;
+  if(which!=='in' && which!=='out'){                                  // az effekt sajat spektrum-meropontja (FX MAKER: "Spectrum tap" blokk a modulok kozott)
+    const nd=w.node; try{ return nd && typeof nd.getSpectrum==='function' ? nd.getSpectrum(which) : null; }catch(e){ return null; }
+  }
   const isOut=(which==='out'), key=isOut?'specOut':'specIn';
   let an=w[key];
   if(!an){
@@ -2396,7 +2409,7 @@ function fxSpectrum(track, ins, which){
 }
 /* Csucsszint (linearis 0..1) az effekt bemenetén ('in') vagy kimenetén ('out'). Az analyser
    csak az elso lekereskor jon letre, igy nem terheli a hangutat, ha nincs nyitva GUI. */
-function fxLevel(track, ins, which){
+function fxLevel(track, ins, which, rms){
   const w=track.fxChain && track.fxChain.wrapped.find(x=>x.insert===ins);
   if(!w || !audioCtx) return 0;
   const isOut=(which==='out');
@@ -2407,6 +2420,7 @@ function fxLevel(track, ins, which){
     if(isOut) w.outAn=an; else w.inAn=an;
   }
   an.getFloatTimeDomainData(an._buf);
+  if(rms){ let s2=0; for(let i=0;i<an._buf.length;i++) s2+=an._buf[i]*an._buf[i]; return Math.sqrt(s2/an._buf.length); }   // atlag (RMS): a VU-muszer ezt mutatja
   let peak=0;
   for(let i=0;i<an._buf.length;i++){ const a=Math.abs(an._buf[i]); if(a>peak) peak=a; }
   return peak;
@@ -2500,10 +2514,11 @@ function makeFxGuiApi(entry, def, pack){
     track:{ index:track.index, name:track.name, color:track.color },
     getParam:(k)=>ins.params[k],
     setParam:(k,v)=>{ const i=idx(); if(i>=0){ if(typeof v==='number') autoManual(track, autoFxKey(ins,k), v); track.setFxInsertParam(i,k,v); } },
-    getEnabled:()=>ins.enabled,
+    getEnabled:()=>!!ins.enabled && !track.fxBypassed,
     setEnabled:(v)=>{ if(track.fxBypassed) return; const i=idx(); if(i>=0) track.setFxInsertEnabled(i,!!v); },
     onEnabledChange:(fn)=>{ entry.enabledListeners.push(fn); return ()=>{ const j=entry.enabledListeners.indexOf(fn); if(j>=0) entry.enabledListeners.splice(j,1); }; },
     getLevel:(which)=>fxLevel(track, ins, which),
+    getRms:(which)=>fxLevel(track, ins, which, true),
     getSpectrum:(which)=>fxSpectrum(track, ins, which),
     getAutomation:(key)=>autoLaneState(track, autoFxKey(ins,key)),                                  // API v2: 'none' | 'has' | 'ovr' | 'rec' | 'off'
     onParamChange:(fn)=>{ entry.paramListeners.push(fn); return ()=>{ const j=entry.paramListeners.indexOf(fn); if(j>=0) entry.paramListeners.splice(j,1); }; },
