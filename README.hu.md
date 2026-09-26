@@ -2,6 +2,10 @@
 
 [🇬🇧 English](README.md) · 🇭🇺 Magyar
 
+<img width="1710" height="900" alt="Screenshot 2026-09-26 at 20 27 49" src="https://github.com/user-attachments/assets/d0792c88-3d5f-4dc6-af1b-8b85fcbc3119" />
+<img width="1710" height="903" alt="Screenshot 2026-09-26 at 20 25 21" src="https://github.com/user-attachments/assets/9fd01509-a9a0-41b4-8a16-8a5bb48b2698" />
+
+
 A **DAWEKI V3** egyetlen fájlból álló, böngészőben futó hangszerkesztő és keverő (DAW), vanilla JavaScripttel és Web Audio API-val készült.
 A **DAWEKI FX MAKER** a párja: szintén egyfájlos, böngészős effekttervező, amely a DAWEKI-ba betölthető `.js` sáveffekteket exportál.
 
