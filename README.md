@@ -2,6 +2,11 @@
 
 🇬🇧 English · [🇭🇺 Magyar](README.hu.md)
 
+<img width="1710" height="900" alt="Screenshot 2026-09-26 at 20 27 49" src="https://github.com/user-attachments/assets/eab7af5f-67ea-4495-ba2f-b1211e1bf467" />
+<img width="1710" height="903" alt="Screenshot 2026-09-26 at 20 25 21" src="https://github.com/user-attachments/assets/de3d53c5-c649-41f0-8b4c-78da425615e1" />
+
+
+
 **DAWEKI V3** is a single-file, browser-based digital audio workstation (DAW) written in vanilla JavaScript and the Web Audio API.
 **DAWEKI FX MAKER** is its companion tool: a single-file, browser-based effect designer that exports loadable `.js` track effects for DAWEKI.
 
