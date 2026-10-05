@@ -120,7 +120,7 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 
 /* ---------- transport (felso menu) ---------- */
 .transport{
-  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; padding:9px 16px;
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; padding:9px 16px;
   background:var(--glass-2);
   -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
@@ -128,7 +128,8 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
   box-shadow:var(--edge), 0 8px 28px rgba(0,0,0,.35);
   flex:0 0 auto; position:relative; z-index:20;
 }
-.transport > .transport-center{ justify-self:center; }
+.transport > .transport-center{ justify-self:center; min-width:0; max-width:100%; }
+.transport > .transport-right{ flex-direction:column; align-items:stretch; gap:4px; }   /* LOCK / PANIC egymas alatt: tobb hely marad a transport sornak */
 .toolbar-secondary{
   display:flex; align-items:center; justify-content:space-between; gap:12px; padding:7px 16px;
   background:var(--glass-2);
@@ -138,7 +139,8 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
   flex-wrap:wrap; flex:0 0 auto; position:relative; z-index:20;
 }
 .transport-center{
-  display:flex; align-items:center; justify-content:center; gap:10px; padding:7px 14px;
+  display:flex; align-items:center; justify-content:center; gap:8px; padding:7px 14px;
+  flex-wrap:wrap; row-gap:6px;   /* keskeny ablakban tobb sorba tor, nem csuszik ki a kepbol */
   border:1px solid color-mix(in srgb, var(--accent-2) 42%, transparent);
   border-radius:14px;
   background:linear-gradient(160deg, color-mix(in srgb, var(--accent-2) 12%, rgba(255,255,255,.06)), rgba(255,255,255,.02));
@@ -146,6 +148,7 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 }
 .transport-right{ display:flex; align-items:center; justify-content:flex-end; gap:8px; min-width:0; flex-wrap:wrap; justify-self:end; }
 .transport-left{ display:flex; align-items:center; gap:10px; min-width:0; flex-wrap:wrap; }
+.toolbar-secondary > .transport-right{ margin-left:auto; }   /* ha a sav tobb sorba tor, a jobb oldali csoport jobbra maradjon */
 
 .theme-select{
   height:30px; border:1px solid var(--line); border-radius:9px; background:var(--glass-1); color:var(--text);
@@ -266,7 +269,7 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 }
 .time-sep{ color:var(--text-dim); margin:0 6px; text-shadow:none; }
 
-.project-actions{ display:flex; gap:7px; }
+.project-actions{ display:flex; gap:7px; flex-wrap:wrap; }
 .project-actions.left{ justify-content:flex-start; }
 .project-actions.right{ justify-content:flex-end; }
 .browse-toggle{ min-width:32px; padding:0 10px; }
@@ -319,12 +322,13 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 /* A REGION CONTROLS sav a TRANSPORT-hoz hasonloan teljesen fix. */
 .region-controls-bar{
   flex:0 0 46px; height:46px; display:flex; align-items:center; justify-content:center;
+  overflow-x:auto; overflow-y:hidden;   /* ha nem fer ki (pl. nyitott BROWSE mellett), gorgetheto, nem log ki */
   background:var(--glass-2);
   -webkit-backdrop-filter:blur(18px) saturate(150%); backdrop-filter:blur(18px) saturate(150%);
   border-bottom:1px solid var(--line); position:relative; z-index:6;
 }
 .region-controls{
-  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+  flex:1; display:flex; align-items:center; justify-content:safe center; gap:6px;
   background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 10%, transparent) 25%, color-mix(in srgb, var(--accent) 10%, transparent) 75%, transparent);
   border-bottom:1px solid var(--line-soft);
 }
@@ -581,7 +585,8 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 .fx-plugin-close:hover{ color:#fff; }
 .fx-plugin-body{ flex:1 1 auto; min-height:0; overflow:auto; }
 
-.daweki-credit{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3; color:#5fe6ff; font:inherit; font-size:10px; font-weight:600; letter-spacing:.1em; cursor:pointer; background:transparent; border:0; padding:2px; white-space:nowrap; text-shadow:0 0 12px rgba(95,230,255,.5); }
+/* normal flex-elem a ket gombcsoport kozott (korabban abszolut kozepre tett: keskeny ablakban rafekudt a gombokra); ha szuk a hely, rovidul (…) */
+.daweki-credit{ flex:1 1 0; min-width:130px; overflow:hidden; text-overflow:ellipsis; text-align:center; position:relative; z-index:3; color:#5fe6ff; font:inherit; font-size:10px; font-weight:600; letter-spacing:.1em; cursor:pointer; background:transparent; border:0; padding:2px; white-space:nowrap; text-shadow:0 0 12px rgba(95,230,255,.5); }
 .daweki-credit:hover{ color:var(--accent-2); text-shadow:0 0 14px color-mix(in srgb, var(--accent-2) 60%, transparent); }
 
 .mixer-fixed-head{
@@ -590,13 +595,14 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
   -webkit-backdrop-filter:blur(16px) saturate(150%); backdrop-filter:blur(16px) saturate(150%);
   border-bottom:1px solid var(--line-soft); flex:0 0 auto; position:relative;
 }
-.console{ flex:1; min-height:0; display:flex; overflow-x:auto; padding:10px 10px; gap:6px; }
+.console{ flex:1; min-height:0; display:flex; overflow-x:auto; padding:10px 0 10px 10px; gap:6px; }   /* jobbra nincs padding: a sticky MASTER a szelen ul, nem latszik ki mogule masik csatorna */
 
 /* A csatornaszalakon NINCS backdrop-filter: bennuk 60 fps-en rajzolodo meter
    canvasok es a VU mutato vannak, a blur ujraszamolasa feleslegesen terhelne.
    A retegzett attetszo gradiens ugyanazt az uveghatast adja nulla koltseggel. */
 .channel{
-  width:140px; flex:0 0 auto; padding:8px 6px 10px; display:flex; flex-direction:column; gap:12px;
+  width:140px; flex:0 0 auto; padding:8px 6px 10px; display:flex; flex-direction:column;
+  gap:clamp(3px, calc((100dvh - 650px) / 22), 12px);   /* alacsony ablakban surubb, hogy a dB kijelzo ne vagodjon le (a 256px fader fix) */
   border-radius:var(--radius);
   border:1px solid var(--line);
   background:
@@ -666,6 +672,9 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 .channel.bus .bus-peak-spacer{ visibility:hidden; }
 /* MASTER: a felso resz (ALL FX + VU + LIMITER) ne legyen magasabb, mint a savok felso resze (FX + PAN + RV + DL + MUTE),
    kulonben alacsony ablakban a fadert lejjebb tolna. (-4px + -5px = -9px) */
+/* MASTER mindig latszik: ha a csatornak nem fernek ki, a tobbi gorgetheto alatta, a MASTER a jobb szelen marad */
+.console > .channel.master{ position:sticky; right:0; z-index:2; isolation:isolate; }
+.console > .channel.master::before{ content:''; position:absolute; inset:-1px; z-index:-1; border-radius:inherit; background:var(--bg-2, #111); }
 .channel.master .vu-chassis{ margin-top:-4px; }
 .channel.master .limiter-lbl{ margin-top:-5px; }
 .limiter-lbl{ font-size:8px; font-weight:700; letter-spacing:.12em; text-align:center; color:var(--text-dim); border:1px solid var(--line); border-radius:8px; padding:3px 0; background:var(--glass-1); }
@@ -1636,6 +1645,21 @@ body.theme-logic[data-lanes-white="1"] .ruler{
 .eki-brand .br i{ display:inline-block; transform:skewX(14deg); font:900 italic 19px/1 'Archivo',sans-serif; color:#fff; letter-spacing:.01em; text-shadow:0 1px 0 rgba(0,0,0,.35), 0 0 4px rgba(0,0,0,.55); }
 .eki-brand .bt{ display:block; margin-top:6px; font:700 7.5px/1 'JetBrains Mono',monospace; color:#b4b4ba; letter-spacing:.08em; white-space:nowrap; }
 
+/* =====================================================================
+   TELEFON / KESKENY ABLAK (a stiluslap vegen, hogy a temak felett is ervenyes legyen)
+   ===================================================================== */
+@media (max-width:700px){
+  /* fejlec: felul logo + LOCK/PANIC, alatta teljes szelessegben a transport sav */
+  body .transport{ grid-template-columns:minmax(0,1fr) auto; row-gap:8px; padding-left:10px; padding-right:10px; }
+  body .transport > .transport-center{ grid-column:1 / -1; grid-row:2; justify-self:stretch; }
+  body .transport > .transport-right{ flex-direction:row; }
+  /* keverő: a csatornak felul, az FX panel alattuk (egymas mellett nem fernek el), az egesz gorgetheto */
+  body .mixer-body{ flex-direction:column; overflow-y:auto; overflow-x:hidden; }
+  body .mixer-body > .console{ flex:0 0 auto; }
+  body .mixer-body > .fx-inspector{ flex:0 0 auto; overflow:visible; border-left:0; border-top:1px solid var(--line); }
+  body .app-body > .browse-panel{ width:min(240px, 62vw); }
+}
+
 #boot{ position:fixed; inset:0; z-index:2147483200; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;
   background:radial-gradient(60% 45% at 50% 46%, rgba(47,208,189,.20), transparent 70%), radial-gradient(rgba(255,255,255,.04) 1px, transparent 1.4px) 0 0/4px 4px, #0b0b0c;
   transition:opacity .55s ease, transform .55s ease; cursor:pointer; }
@@ -1906,7 +1930,7 @@ window.dawekiBoot = (function(){
       <button id="redoBtn" class="pill-btn" aria-label="Redo (R)">R</button>
     </div>
   </div>
-  <button type="button" class="daweki-credit" id="dawekiCredit">DAWEKI © 2026 • ANDRÁS ECKERT • VIBE CODER</button>
+  <button type="button" class="daweki-credit" id="dawekiCredit" title="DAWEKI © 2026 • ANDRÁS ECKERT • VIBE CODER">DAWEKI © 2026 • ANDRÁS ECKERT • VIBE CODER</button>
   <div class="transport-right">
     <div class="zoom-controls">
       <span class="zoom-label">ZOOM</span>
