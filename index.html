@@ -314,6 +314,10 @@ button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px sol
 .bi-preview:hover{ border-color:var(--accent); box-shadow:var(--glow-a); }
 .bi-preview.playing{ background:var(--accent); border-color:transparent; color:#04231f; box-shadow:var(--glow-a); }
 .lane.drag-over{ outline:2px dashed var(--accent); outline-offset:-2px; background:color-mix(in srgb, var(--accent) 8%, transparent); }
+/* fajl behuzasakor: hova kerul a minta eleje (SNAP-re igazitva) */
+.drop-marker{ position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--accent); box-shadow:0 0 8px var(--accent); pointer-events:none; z-index:5; display:none; }
+.lane.drag-over .drop-marker{ display:block; }
+.track-row .header.drag-over{ outline:2px dashed var(--accent); outline-offset:-2px; }
 .rec-btn{ color:#fff; background:linear-gradient(160deg, var(--danger), #7d1420); border-color:transparent; }
 .add-btn{ color:#2a1600; background:linear-gradient(160deg, var(--accent-2), #b06f16); border-color:transparent; }
 
@@ -4778,13 +4782,11 @@ function importFileToTrack(file, track, atTime){
     addClipToTrack(track, source, snapTime(Math.max(0, atTime)), name);
   }).catch(()=>alert('Failed to read the audio file.'));
 }
-importBtn.addEventListener('click', ()=>{ importInput.value=''; importInput.click(); });
-importInput.addEventListener('change', async ()=>{
-  const files=Array.from(importInput.files);
-  if(files.length===0) return;
+/* Tobb hangfajl egymas utan ugyanarra a savra (IMPORT gomb es a Finderbol behuzott fajlok). */
+async function importFilesToTrack(files, track, atTime){
+  if(!files.length) return;
   ensureAudioGraph();
-  const track=selectedClip ? selectedClip.track : (selectedTrack || tracks[0]);
-  let cursor=currentPlayheadSeconds();
+  let cursor=atTime;
   const failed=[];
   for(const file of files){
     const name=file.name.replace(/\.[^.]+$/, '');
@@ -4794,10 +4796,37 @@ importInput.addEventListener('change', async ()=>{
       const source=new AudioSource(originalBytes, nativeBuffer, name);
       audioSources.push(source);
       addClipToTrack(track, source, snapTime(cursor), name);
-      cursor+=nativeBuffer.duration;
+      cursor=snapTime(cursor)+nativeBuffer.duration;
     } catch(e){ failed.push(file.name); }
   }
   if(failed.length>0) alert('Failed to read: '+failed.join(', '));
+}
+importBtn.addEventListener('click', ()=>{ importInput.value=''; importInput.click(); });
+importInput.addEventListener('change', ()=>{
+  const files=Array.from(importInput.files);
+  const track=selectedClip ? selectedClip.track : (selectedTrack || tracks[0]);
+  importFilesToTrack(files, track, currentPlayheadSeconds());
+});
+
+/* ================= drag & drop a Finderbol / asztalrol ================= */
+const AUDIO_EXT_RE=/\.(wav|wave|mp3|aif|aiff|aifc|flac|ogg|oga|opus|m4a|aac|caf|webm)$/i;
+function isFileDrag(e){ return !!(e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files')); }
+function droppedAudioFiles(e){
+  const all=Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+  const audio=all.filter(f=>/^audio\//.test(f.type) || AUDIO_EXT_RE.test(f.name));
+  if(all.length && !audio.length) showToast('Only audio files can be dropped onto a track', true);
+  else if(audio.length<all.length) showToast((all.length-audio.length)+' non-audio file(s) skipped', true);
+  return audio;
+}
+/* A sav mellett ejtett fajlt a bongeszo nem nyithatja meg (kulonben eltunne a projekt). */
+document.addEventListener('dragover', (e)=>{
+  if(!isFileDrag(e) || e.defaultPrevented) return;
+  e.preventDefault(); e.dataTransfer.dropEffect='none';
+});
+document.addEventListener('drop', (e)=>{
+  if(!isFileDrag(e) || e.defaultPrevented) return;
+  e.preventDefault();
+  showToast('Drop audio files onto a track lane');
 });
 function buildTrackRows(){
   tracks.forEach(track=>{
@@ -4815,7 +4844,7 @@ function buildTrackRows(){
         '<button class="mini rec-btn" title="Record from microphone" aria-label="Record">\u25CF</button>' +
       '</div>';
     const lane=document.createElement('div'); lane.className='lane';
-    const hint=document.createElement('div'); hint.className='lane-hint'; hint.textContent='BROWSE or + on TRACK \u2026';
+    const hint=document.createElement('div'); hint.className='lane-hint'; hint.textContent='DROP AUDIO HERE \u00B7 BROWSE \u00B7 + on TRACK';
     lane.appendChild(hint);
     row.appendChild(header); row.appendChild(lane); trackRowsEl.appendChild(row);
     track.dom.laneEl=lane; track.dom.laneHint=hint; track.dom.headerEl=header; track.dom.rowEl=row;
@@ -4843,21 +4872,40 @@ function buildTrackRows(){
     recBtn.addEventListener('click', ()=>toggleRecordArm(track, recBtn));
     inputSelect.addEventListener('change', ()=>{ track.inputDeviceId=inputSelect.value; });
 
+    const dropMarker=document.createElement('div'); dropMarker.className='drop-marker'; lane.appendChild(dropMarker);
+    const dropTime=(e)=>snapTime(Math.max(0, (e.clientX-lane.getBoundingClientRect().left)/pxPerSecond));
     lane.addEventListener('dragover', (e)=>{
-      if(!draggedBrowseFile) return;
+      if(!draggedBrowseFile && !isFileDrag(e)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect='copy';
       lane.classList.add('drag-over');
+      dropMarker.style.left=(dropTime(e)*pxPerSecond)+'px';
     });
-    lane.addEventListener('dragleave', ()=>{ lane.classList.remove('drag-over'); });
+    lane.addEventListener('dragleave', (e)=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drag-over'); });
     lane.addEventListener('drop', (e)=>{
       lane.classList.remove('drag-over');
-      if(!draggedBrowseFile) return;
+      if(draggedBrowseFile){
+        e.preventDefault();
+        importFileToTrack(draggedBrowseFile, track, dropTime(e));
+        draggedBrowseFile=null;
+        return;
+      }
+      if(!isFileDrag(e)) return;
       e.preventDefault();
-      const rect=lane.getBoundingClientRect();
-      const x=e.clientX-rect.left;
-        importFileToTrack(draggedBrowseFile, track, snapTime(Math.max(0, x/pxPerSecond)));
-      draggedBrowseFile=null;
+      importFilesToTrack(droppedAudioFiles(e), track, dropTime(e));
+    });
+    /* a sav fejlecere ejtve a lejatszofej helyere kerul (mint a + gombnal) */
+    header.addEventListener('dragover', (e)=>{
+      if(!draggedBrowseFile && !isFileDrag(e)) return;
+      e.preventDefault(); e.dataTransfer.dropEffect='copy'; header.classList.add('drag-over');
+    });
+    header.addEventListener('dragleave', (e)=>{ if(!header.contains(e.relatedTarget)) header.classList.remove('drag-over'); });
+    header.addEventListener('drop', (e)=>{
+      header.classList.remove('drag-over');
+      if(draggedBrowseFile){ e.preventDefault(); importFileToTrack(draggedBrowseFile, track, snapTime(currentPlayheadSeconds())); draggedBrowseFile=null; return; }
+      if(!isFileDrag(e)) return;
+      e.preventDefault();
+      importFilesToTrack(droppedAudioFiles(e), track, currentPlayheadSeconds());
     });
   });
 }
