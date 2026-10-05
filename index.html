@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>DAWEKI V3</title>
-<style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+<style>@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@1,800;1,900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 /* =====================================================================
    DAWEKI V3 — GLASSMORPHISM STUDIO SKIN
@@ -1620,15 +1620,204 @@ body.theme-logic[data-lanes-white="1"] .ruler{
   background:linear-gradient(170deg, var(--bg-2), var(--bg));
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
+/* =====================================================================
+   EKIDIO SOUND LOGO + STARTUP SPLASH (PADEKI / STEMEKI stilus)
+   "DAW" + ferde EKI jelveny: 4 sav (a DAWEKI savszinei), bennuk regiok
+   hullamformaval. Indulaskor a regiok beuszanak, vegigfut rajtuk egy
+   lejatszofej (minden regio felvillan + pling), majd beugrik az EKI.
+   ===================================================================== */
+:root{ --eki1:#2fd0bd; --eki2:#f39a2e; --eki3:#ec5454; --eki4:#9d6bff; }
+.brand.eki-brand{ display:flex; align-items:center; cursor:pointer; user-select:none; -webkit-user-select:none; }
+.brand.eki-brand:active{ transform:scale(.97); }
+.eki-brand .bw{ font:900 italic 22px/1 'Archivo',sans-serif; color:#fff; letter-spacing:-.01em; }
+.eki-brand .br{ display:inline-block; transform:skewX(-14deg); padding:3px 8px 2px 6px; margin-left:3px; box-shadow:3px 3px 0 #fff;
+  background:linear-gradient(var(--eki1) 0 25%, var(--eki2) 0 50%, var(--eki3) 0 75%, var(--eki4) 0); }
+.eki-brand .br i{ display:inline-block; transform:skewX(14deg); font:900 italic 19px/1 'Archivo',sans-serif; color:#fff; letter-spacing:.01em; text-shadow:0 1px 0 rgba(0,0,0,.35), 0 0 4px rgba(0,0,0,.55); }
+.eki-brand .bt{ display:none; margin-left:13px; padding-left:8px; border-left:3px solid var(--eki1); font:700 8.5px/1.35 'JetBrains Mono',monospace; color:#b4b4ba; letter-spacing:.2em; white-space:nowrap; }
+
+@media (min-width:1700px){ .eki-brand .bt{ display:block; } }   /* a felirat csak szeles kepernyon fer el a transport sorban */
+#boot{ position:fixed; inset:0; z-index:2147483200; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;
+  background:radial-gradient(60% 45% at 50% 46%, rgba(47,208,189,.20), transparent 70%), radial-gradient(rgba(255,255,255,.04) 1px, transparent 1.4px) 0 0/4px 4px, #0b0b0c;
+  transition:opacity .55s ease, transform .55s ease; cursor:pointer; }
+#boot.out{ opacity:0; transform:scale(1.04); }
+#boot .splash{ display:flex; flex-direction:column; align-items:center; width:min(86vw,460px); }
+#boot .slogo{ display:flex; align-items:center; font:900 italic clamp(54px,15vw,92px)/1 'Archivo',sans-serif; letter-spacing:-.02em; }
+#boot .slogo .bw{ color:#fff; animation:sIn .6s cubic-bezier(.2,.9,.3,1.2) both; }
+#boot .deki{ position:relative; display:inline-block; width:1.9em; height:1.14em; margin-left:.14em; transform:skewX(-14deg); }
+#boot .deki .lanes{ position:absolute; inset:0; background:#17191e; box-shadow:.07em .07em 0 #fff; animation:bIn .45s .2s ease-out both; }
+#boot .deki .clip{ position:absolute; top:calc(var(--r) * 25%); height:25%; left:var(--l); width:var(--w);
+  background:var(--wave) center/100% 100% no-repeat, var(--col); clip-path:inset(.014em .008em round .03em);
+  animation:cIn .7s var(--d) cubic-bezier(.2,.9,.3,1.12) both, cHit .32s var(--h) ease-out; }
+#boot .deki .ph{ position:absolute; top:-.07em; bottom:-.07em; left:0; width:.035em; margin-left:-.0175em; background:#fff;
+  box-shadow:0 0 .1em #fff, 0 0 .32em rgba(47,208,189,.95); animation:phRun .8s 1.15s linear both; }
+#boot .deki .ek{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+#boot .deki .ek i{ display:block; transform:skewX(14deg); font-style:italic; color:#fff; line-height:1; margin-top:.02em;
+  text-shadow:0 .035em 0 rgba(0,0,0,.35), 0 0 .14em rgba(0,0,0,.6); animation:ePop .45s 1.92s cubic-bezier(.2,.9,.3,1.5) both; }
+#boot .sline{ width:100%; height:4px; margin:20px 0 12px; transform-origin:center; animation:sGrow .7s .6s ease-out both;
+  background:linear-gradient(90deg, transparent, var(--eki1) 18%, var(--eki2) 40%, var(--eki3) 62%, var(--eki4) 82%, transparent); }
+#boot .ssub{ font:700 clamp(10px,3vw,13px)/1.5 'JetBrains Mono',monospace; letter-spacing:.32em; color:#d8d8dc; text-align:center; animation:sFade .7s .85s both; }
+#boot .ssub b{ color:var(--eki1); font-weight:700; }
+#boot .sbar{ width:62%; height:3px; margin-top:34px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; animation:sFade .5s 1s both; }
+#boot .sbar i{ display:block; height:100%; width:0; background:var(--eki1); box-shadow:0 0 8px var(--eki1); transition:width .35s ease; }
+#boot .st{ margin-top:10px; font:700 10px 'JetBrains Mono',monospace; letter-spacing:.2em; color:#7c7c82; text-transform:uppercase; animation:sFade .5s 1s both; }
+#boot .st.ready{ color:#fff; animation:sBlink 1.1s ease-in-out infinite; }
+#boot .sver{ position:absolute; bottom:max(18px, env(safe-area-inset-bottom)); font:700 9px 'JetBrains Mono',monospace; letter-spacing:.24em; color:#55555a; }
+@keyframes sIn{ from{ opacity:0; transform:translateX(-40px); } to{ opacity:1; transform:none; } }
+@keyframes bIn{ from{ opacity:0; transform:scale(.85); } to{ opacity:1; transform:none; } }
+@keyframes cIn{ from{ opacity:0; transform:translateX(var(--x)) scaleX(.55); } 60%{ opacity:1; } to{ opacity:1; transform:none; } }
+@keyframes cHit{ 0%{ filter:none; } 35%{ filter:brightness(1.8) saturate(1.2); } 100%{ filter:none; } }
+@keyframes phRun{ 0%{ left:0; opacity:0; } 6%{ opacity:1; } 88%{ opacity:1; } 100%{ left:100%; opacity:0; } }
+@keyframes ePop{ from{ opacity:0; transform:skewX(14deg) scale(.3) rotate(-8deg); } to{ opacity:1; transform:skewX(14deg) scale(1); } }
+@keyframes sGrow{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+@keyframes sFade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+@keyframes sBlink{ 50%{ opacity:.35; } }
 </style>
 </head>
 <body class="theme-logic">
-<div class="splash-overlay" id="splashOverlay" role="status" aria-label="DAWEKI loading">
-  <div class="splash-card"><div class="splash-logo">DAWEKI <span class="splash-logo-version">V3</span></div><div class="splash-subtitle">RECORDING AND MIXING</div><div class="splash-status">AUDIO ENGINE INITIALIZING...</div><div class="splash-progress"></div></div>
+<div id="boot" role="status" aria-label="DAWEKI V3 – digital audio workstation">
+  <div class="splash">
+    <div class="slogo"><span class="bw">DAW</span><span class="deki" id="bootDeki" aria-label="EKI"></span></div>
+    <div class="sline"></div>
+    <div class="ssub">DIGITAL AUDIO <b>WORKSTATION</b><br>ARRANGER · MIXER · FX</div>
+    <div class="sbar"><i id="bootBar"></i></div>
+    <div class="st" id="bootSt">starting…</div>
+  </div>
+  <div class="sver">V3 · EKIDIO SOUND</div>
 </div>
+<script>
+/* ================= STARTUP SPLASH + JINGLE (PADEKI / STEMEKI stilus) ================= */
+window.dawekiBoot = (function(){
+  'use strict';
+  const COLS = ['#2fd0bd','#f39a2e','#ec5454','#9d6bff'];
+  /* a jelveny 4 sava, savonkent a regiok [kezdet, vege] (0..1) */
+  const LANES = [[[0,.38],[.44,1]], [[0,.22],[.28,.7],[.76,1]], [[0,.55],[.61,1]], [[0,.3],[.36,.62],[.68,1]]];
+  const NOTES = [[84,88,91], [79,83,86], [76,79,81], [72,74,76]];   // savonkent: felso sav a legmagasabb
+  const PH_AT = 1.15, PH_DUR = 0.8, END_AT = 1.98, SPLASH_MS = 2500;
+  const HITS = [];
+  LANES.forEach((lane, r) => lane.forEach(([a, b], k) => HITS.push({ at: PH_AT + a * PH_DUR, note: NOTES[r][k], pan: (a + b - 1) * 0.6 })));
+  HITS.sort((x, y) => x.at - y.at);
+
+  function waveUri(seed) {                                      // egy regio hullamformaja (SVG)
+    let h = '', x = seed * 9.7;
+    for (let j = 0; j < 22; j++) {
+      x += 0.9;
+      const v = 0.18 + 0.82 * Math.abs(Math.sin(x) * Math.cos(x * 0.37 + seed));
+      const hh = (v * 36).toFixed(1);
+      h += `<rect x='${j * 10 + 2.5}' y='${(50 - hh / 2).toFixed(1)}' width='5' height='${hh}'/>`;
+    }
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 50' preserveAspectRatio='none'><g fill='rgba(255,255,255,.42)'>${h}</g></svg>`;
+    return `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27')}')`;   // a style="" attributumban nem lehet " jel
+  }
+  function build() {
+    const el = document.getElementById('bootDeki'); if (!el) return;
+    let h = '<span class="lanes"></span>';
+    LANES.forEach((lane, r) => lane.forEach(([a, b], k) => {
+      const dir = (r + k) % 2 ? 1 : -1, x = (dir * (1.6 + Math.random() * 1.4)).toFixed(2);
+      const d = (0.3 + r * 0.08 + Math.random() * 0.22).toFixed(2), hit = (PH_AT + a * PH_DUR).toFixed(3);
+      h += `<span class="clip" style="--r:${r};--l:${a * 100}%;--w:${(b - a) * 100}%;--col:${COLS[r]};--x:${x}em;--d:${d}s;--h:${hit}s;--wave:${waveUri(r * 3 + k + 1)}"></span>`;
+    }));
+    h += '<span class="ph"></span><span class="ek"><i>EKI</i></span>';
+    el.innerHTML = h;
+  }
+  build();
+  const TPL = document.getElementById('boot')?.outerHTML || '';  // a splash kiinduló állapota – a logóról újrajátszható
+  const t0 = performance.now();
+
+  /* --- jingle: minden regional egy halk "pling", amikor a lejatszofej odaer, a vegen kis csillogo akkord --- */
+  const mtof = n => 440 * Math.pow(2, (n - 69) / 12);
+  function pling(c, t, n, lvl, pan, dur = 0.22) {
+    const f = mtof(n), g = c.createGain(), p = c.createStereoPanner(); p.pan.value = pan;
+    [[1, 'sine', 1], [2, 'triangle', 0.18], [3.01, 'sine', 0.07]].forEach(([m, type, a]) => {
+      const o = c.createOscillator(), og = c.createGain(); o.type = type; o.frequency.value = f * m;
+      og.gain.setValueAtTime(a, t); og.gain.exponentialRampToValueAtTime(0.0001, t + dur * (m > 1 ? 0.5 : 1));
+      o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.05);
+    });
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(lvl, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(p).connect(c.destination);
+  }
+  function chord(c, t) {
+    [84, 88, 91, 96].forEach((n, k) => pling(c, t + k * 0.035, n, 0.11, (k - 1.5) * 0.3, 0.9));
+    const o = c.createOscillator(), g = c.createGain(); o.type = 'sine';             // kis "bloop" felfele
+    o.frequency.setValueAtTime(mtof(60), t - 0.06); o.frequency.exponentialRampToValueAtTime(mtof(84), t + 0.05);
+    g.gain.setValueAtTime(0.0001, t - 0.06); g.gain.exponentialRampToValueAtTime(0.12, t - 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(c.destination); o.start(t - 0.06); o.stop(t + 0.15);
+  }
+  function playFrom(c, elapsed) {                               // elapsed: ennyi mp telt el az animacio kezdete ota
+    const now = c.currentTime;
+    HITS.forEach(hp => { const at = hp.at - elapsed; if (at > -0.02) pling(c, now + Math.max(0.01, at), hp.note, 0.09, hp.pan); });
+    chord(c, now + Math.max(0.05, END_AT - elapsed));
+  }
+  const JG = { c: null, played: false };
+  function ctx() {
+    if (!JG.c) { try { JG.c = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { JG.c = null; } }
+    return JG.c;
+  }
+  /* a bongeszo csak kattintas utan enged hangot – ha az animacio alatt tiltva van, a kattintasra rovid valtozat szol */
+  (function autoJingle() {
+    const c = ctx(); if (!c) return;
+    const anim = document.querySelector('#boot .bw')?.getAnimations?.()[0];
+    const start = () => {
+      if (c.state !== 'running' || JG.played) return; JG.played = true;
+      const base = anim && anim.startTime != null ? anim.startTime : t0;
+      playFrom(c, (performance.now() - base) / 1000);
+    };
+    c.resume().then(start).catch(() => {});
+    setTimeout(start, 50);
+  })();
+  function jingleOnTap() {
+    const c = JG.c; if (!c || JG.played) return; JG.played = true;
+    c.resume().then(() => { const t = c.currentTime + 0.02; [72, 79, 84, 88].forEach((n, k) => pling(c, t + k * 0.06, n, 0.09, (k - 1.5) * 0.4)); chord(c, t + 0.3); }).catch(() => {});
+  }
+
+  function step(frac, text) {
+    const bar = document.getElementById('bootBar'), st = document.getElementById('bootSt');
+    if (bar) bar.style.width = Math.round(frac * 100) + '%';
+    if (st && text) st.textContent = text;
+  }
+  function close(el, then) {
+    let gone = false;
+    const go = e => {
+      if (gone) return; gone = true;
+      if (then) then(e);
+      el.classList.add('out'); document.removeEventListener('keydown', key, true);
+      setTimeout(() => el.remove(), 600);
+    };
+    const key = e => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); go(e); } };
+    el.addEventListener('pointerdown', go);
+    document.addEventListener('keydown', key, true);
+    return go;
+  }
+  step(0.35, 'audio engine…');
+
+  return {
+    step,
+    /* a DAWEKI init vegen hivodik */
+    finish() {
+      const el = document.getElementById('boot'); if (!el) return;
+      step(1, 'ready · click to start'); document.getElementById('bootSt').classList.add('ready');
+      const go = close(el, e => { if (e) jingleOnTap(); });
+      if (!/[?&]splash\b/.test(location.search))                 // ?splash: nyitva marad (design-hangolashoz)
+        setTimeout(go, Math.max(0, SPLASH_MS - (performance.now() - t0)) + 900);
+    },
+    /* a fejlec logojara kattintva ujra lejatszik (hanggal) */
+    replay() {
+      if (!TPL || document.getElementById('boot')) return;
+      document.body.insertAdjacentHTML('beforeend', TPL);
+      build();
+      const el = document.getElementById('boot'), bar = document.getElementById('bootBar'), st = document.getElementById('bootSt');
+      st.textContent = '♪';
+      requestAnimationFrame(() => { bar.style.transition = 'width 1.9s cubic-bezier(.3,.6,.4,1)'; bar.style.width = '100%'; });
+      const c = ctx(); if (c) c.resume().then(() => playFrom(c, 0)).catch(() => {});
+      const go = close(el);
+      setTimeout(() => { st.textContent = 'DAWEKI V3'; st.classList.add('ready'); }, 2300);
+      setTimeout(go, 3600);
+    }
+  };
+})();
+</script>
 
 <header class="transport">
-  <div class="brand"><span class="brand-title">DAWEKI V3</span><span class="brand-sub">arranger &amp; mixer</span></div>
+  <div class="brand eki-brand" id="dawekiLogo" role="button" tabindex="0" title="DAWEKI V3 ♪" aria-label="DAWEKI V3"><span class="bw">DAW</span><span class="br"><i>EKI</i></span><span class="bt">V3 · ARRANGER<br>&amp; MIXER</span></div>
   <div class="transport-center" aria-label="TRANSPORT">
     <div class="transport-controls"><button id="playBtn" class="transport-btn" aria-label="Play / pause">▶</button><button id="stopBtn" class="transport-btn" aria-label="Stop">■</button><button id="recordTransportBtn" class="transport-btn record-transport" aria-label="Record selected tracks">●</button></div>
     <button id="loopBtn" class="pill-btn" aria-label="Loop (L)">🔁 LOOP</button>
@@ -1851,7 +2040,7 @@ const browseToggleBtn = document.getElementById('browseToggleBtn');
 const mixerToggleBtn = document.getElementById('mixerToggleBtn');
 const matrixToggleBtn = document.getElementById('matrixToggleBtn');
 const themeSelect = document.getElementById('themeSelect');
-const splashOverlay = document.getElementById('splashOverlay');
+document.getElementById('dawekiLogo').addEventListener('click', ()=>window.dawekiBoot.replay());
 
 let audioCtx = null;
 let masterGain = null, compressor = null, masterAnalyser = null, masterData = null;
@@ -6318,7 +6507,7 @@ layoutTimeline();
 totalTimeEl.textContent=fmtTime(0);
 updateTransportDisplay(0);
 requestAnimationFrame(()=>tick(tickGen));
-setTimeout(()=>splashOverlay.classList.add('hidden'), 1800);
+window.dawekiBoot.finish();
 autosaveInit();
 
 })();
