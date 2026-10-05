@@ -1627,15 +1627,15 @@ body.theme-logic[data-lanes-white="1"] .ruler{
    lejatszofej (minden regio felvillan + pling), majd beugrik az EKI.
    ===================================================================== */
 :root{ --eki1:#2fd0bd; --eki2:#f39a2e; --eki3:#ec5454; --eki4:#9d6bff; }
-.brand.eki-brand{ display:flex; align-items:center; cursor:pointer; user-select:none; -webkit-user-select:none; }
+.brand.eki-brand{ display:flex; flex-direction:column; align-items:flex-start; cursor:pointer; user-select:none; -webkit-user-select:none; }
 .brand.eki-brand:active{ transform:scale(.97); }
+.eki-brand .logo-row{ display:flex; align-items:center; }
 .eki-brand .bw{ font:900 italic 22px/1 'Archivo',sans-serif; color:#fff; letter-spacing:-.01em; }
 .eki-brand .br{ display:inline-block; transform:skewX(-14deg); padding:3px 8px 2px 6px; margin-left:3px; box-shadow:3px 3px 0 #fff;
   background:linear-gradient(var(--eki1) 0 25%, var(--eki2) 0 50%, var(--eki3) 0 75%, var(--eki4) 0); }
 .eki-brand .br i{ display:inline-block; transform:skewX(14deg); font:900 italic 19px/1 'Archivo',sans-serif; color:#fff; letter-spacing:.01em; text-shadow:0 1px 0 rgba(0,0,0,.35), 0 0 4px rgba(0,0,0,.55); }
-.eki-brand .bt{ display:none; margin-left:13px; padding-left:8px; border-left:3px solid var(--eki1); font:700 8.5px/1.35 'JetBrains Mono',monospace; color:#b4b4ba; letter-spacing:.2em; white-space:nowrap; }
+.eki-brand .bt{ display:block; margin-top:6px; font:700 7.5px/1 'JetBrains Mono',monospace; color:#b4b4ba; letter-spacing:.08em; white-space:nowrap; }
 
-@media (min-width:1700px){ .eki-brand .bt{ display:block; } }   /* a felirat csak szeles kepernyon fer el a transport sorban */
 #boot{ position:fixed; inset:0; z-index:2147483200; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;
   background:radial-gradient(60% 45% at 50% 46%, rgba(47,208,189,.20), transparent 70%), radial-gradient(rgba(255,255,255,.04) 1px, transparent 1.4px) 0 0/4px 4px, #0b0b0c;
   transition:opacity .55s ease, transform .55s ease; cursor:pointer; }
@@ -1817,7 +1817,7 @@ window.dawekiBoot = (function(){
 </script>
 
 <header class="transport">
-  <div class="brand eki-brand" id="dawekiLogo" role="button" tabindex="0" title="DAWEKI V3 ♪" aria-label="DAWEKI V3"><span class="bw">DAW</span><span class="br"><i>EKI</i></span><span class="bt">V3 · ARRANGER<br>&amp; MIXER</span></div>
+  <div class="brand eki-brand" id="dawekiLogo" role="button" tabindex="0" title="DAWEKI V3 ♪" aria-label="DAWEKI V3"><span class="logo-row"><span class="bw">DAW</span><span class="br"><i>EKI</i></span></span><span class="bt">V3 · ARRANGER &amp; MIXER</span></div>
   <div class="transport-center" aria-label="TRANSPORT">
     <div class="transport-controls"><button id="playBtn" class="transport-btn" aria-label="Play / pause">▶</button><button id="stopBtn" class="transport-btn" aria-label="Stop">■</button><button id="recordTransportBtn" class="transport-btn record-transport" aria-label="Record selected tracks">●</button></div>
     <button id="loopBtn" class="pill-btn" aria-label="Loop (L)">🔁 LOOP</button>
