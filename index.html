@@ -4811,6 +4811,28 @@ importInput.addEventListener('change', ()=>{
 /* ================= drag & drop a Finderbol / asztalrol ================= */
 const AUDIO_EXT_RE=/\.(wav|wave|mp3|aif|aiff|aifc|flac|ogg|oga|opus|m4a|aac|caf|webm)$/i;
 function isFileDrag(e){ return !!(e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files')); }
+/* Option/Alt + behuzas: minden minta kulon savra, ugyanabba az idopontba (pl. STEMEKI stemek).
+   Az elso arra a savra, ahova ejtetted; a tobbi a maradek URES savokra (lefele, majd felulrol korbe);
+   ha nincs eleg ures sav, a foglaltakat is hasznalja. */
+function spreadTracks(first, count){
+  const n=tracks.length, rest=[];
+  for(let k=1;k<n;k++) rest.push(tracks[(first.index+k)%n]);
+  const empty=rest.filter(t=>!t.clips.length), busy=rest.filter(t=>t.clips.length);
+  return [first].concat(empty, busy).slice(0, Math.max(1, count));
+}
+function dragFileCount(e){ return Array.from((e.dataTransfer && e.dataTransfer.items) || []).filter(i=>i.kind==='file').length || 1; }
+function clearDropMarks(){ tracks.forEach(t=>{ if(t.dom.laneEl) t.dom.laneEl.classList.remove('drag-over'); if(t.dom.headerEl) t.dom.headerEl.classList.remove('drag-over'); }); }
+async function importFilesSpread(files, first, atTime){
+  if(!files.length) return;
+  const targets=spreadTracks(first, files.length);
+  const skipped=files.length-targets.length;
+  const usedBusy=targets.slice(1).some(t=>t.clips.length);
+  for(let i=0;i<targets.length;i++) await importFilesToTrack([files[i]], targets[i], atTime);
+  let msg=files.length+' samples on tracks '+targets.map(t=>t.index+1).join(', ');
+  if(usedBusy) msg+=' (some tracks already had audio)';
+  if(skipped>0) msg+=' — '+skipped+' left out, only '+tracks.length+' tracks';
+  showToast(msg, skipped>0);
+}
 function droppedAudioFiles(e){
   const all=Array.from((e.dataTransfer && e.dataTransfer.files) || []);
   const audio=all.filter(f=>/^audio\//.test(f.type) || AUDIO_EXT_RE.test(f.name));
@@ -4844,7 +4866,7 @@ function buildTrackRows(){
         '<button class="mini rec-btn" title="Record from microphone" aria-label="Record">\u25CF</button>' +
       '</div>';
     const lane=document.createElement('div'); lane.className='lane';
-    const hint=document.createElement('div'); hint.className='lane-hint'; hint.textContent='DROP AUDIO HERE \u00B7 BROWSE \u00B7 + on TRACK';
+    const hint=document.createElement('div'); hint.className='lane-hint'; hint.textContent='DROP AUDIO HERE (\u2325/Alt: one per track) \u00B7 BROWSE \u00B7 + on TRACK';
     lane.appendChild(hint);
     row.appendChild(header); row.appendChild(lane); trackRowsEl.appendChild(row);
     track.dom.laneEl=lane; track.dom.laneHint=hint; track.dom.headerEl=header; track.dom.rowEl=row;
@@ -4873,17 +4895,20 @@ function buildTrackRows(){
     inputSelect.addEventListener('change', ()=>{ track.inputDeviceId=inputSelect.value; });
 
     const dropMarker=document.createElement('div'); dropMarker.className='drop-marker'; lane.appendChild(dropMarker);
+    track.dom.dropMarker=dropMarker;
     const dropTime=(e)=>snapTime(Math.max(0, (e.clientX-lane.getBoundingClientRect().left)/pxPerSecond));
     lane.addEventListener('dragover', (e)=>{
       if(!draggedBrowseFile && !isFileDrag(e)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect='copy';
-      lane.classList.add('drag-over');
-      dropMarker.style.left=(dropTime(e)*pxPerSecond)+'px';
+      const x=(dropTime(e)*pxPerSecond)+'px';
+      clearDropMarks();
+      const targets=(e.altKey && !draggedBrowseFile) ? spreadTracks(track, dragFileCount(e)) : [track];   /* Alt: minden erintett sav kivilagosodik */
+      targets.forEach(t=>{ t.dom.laneEl.classList.add('drag-over'); t.dom.dropMarker.style.left=x; });
     });
-    lane.addEventListener('dragleave', (e)=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drag-over'); });
+    lane.addEventListener('dragleave', (e)=>{ if(!lane.contains(e.relatedTarget)) clearDropMarks(); });
     lane.addEventListener('drop', (e)=>{
-      lane.classList.remove('drag-over');
+      clearDropMarks();
       if(draggedBrowseFile){
         e.preventDefault();
         importFileToTrack(draggedBrowseFile, track, dropTime(e));
@@ -4892,20 +4917,26 @@ function buildTrackRows(){
       }
       if(!isFileDrag(e)) return;
       e.preventDefault();
-      importFilesToTrack(droppedAudioFiles(e), track, dropTime(e));
+      const files=droppedAudioFiles(e);
+      if(e.altKey && files.length>1) importFilesSpread(files, track, dropTime(e));
+      else importFilesToTrack(files, track, dropTime(e));
     });
     /* a sav fejlecere ejtve a lejatszofej helyere kerul (mint a + gombnal) */
     header.addEventListener('dragover', (e)=>{
       if(!draggedBrowseFile && !isFileDrag(e)) return;
-      e.preventDefault(); e.dataTransfer.dropEffect='copy'; header.classList.add('drag-over');
+      e.preventDefault(); e.dataTransfer.dropEffect='copy';
+      clearDropMarks();
+      ((e.altKey && !draggedBrowseFile) ? spreadTracks(track, dragFileCount(e)) : [track]).forEach(t=>t.dom.headerEl.classList.add('drag-over'));
     });
-    header.addEventListener('dragleave', (e)=>{ if(!header.contains(e.relatedTarget)) header.classList.remove('drag-over'); });
+    header.addEventListener('dragleave', (e)=>{ if(!header.contains(e.relatedTarget)) clearDropMarks(); });
     header.addEventListener('drop', (e)=>{
-      header.classList.remove('drag-over');
+      clearDropMarks();
       if(draggedBrowseFile){ e.preventDefault(); importFileToTrack(draggedBrowseFile, track, snapTime(currentPlayheadSeconds())); draggedBrowseFile=null; return; }
       if(!isFileDrag(e)) return;
       e.preventDefault();
-      importFilesToTrack(droppedAudioFiles(e), track, currentPlayheadSeconds());
+      const files=droppedAudioFiles(e);
+      if(e.altKey && files.length>1) importFilesSpread(files, track, currentPlayheadSeconds());
+      else importFilesToTrack(files, track, currentPlayheadSeconds());
     });
   });
 }
